@@ -35,12 +35,12 @@ func (g *GeoIP) CityRaw(ip string) string {
 	return record.City.Names["zh-CN"]
 }
 
-func (g *GeoIP) Country(ip string) string {
+func (g *GeoIP) Country(ip string) (string, string) {
 	record, err := g.reader.City(net.ParseIP(ip))
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	return record.Country.Names["zh-CN"]
+	return record.Country.Names["zh-CN"], record.Country.IsoCode
 }
 
 func (g *GeoIP) Location(ip string) (float64, float64) {
