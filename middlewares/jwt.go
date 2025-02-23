@@ -13,6 +13,10 @@ import (
 // Jwt 检查jwt
 func Jwt(conf *auth.JwtConf, contextKey string, claims func() jwt.Claims, isContinue bool, locale *i18n.I18N, logf *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if isTokenSuccess, exists := c.Get("token_success"); exists && isTokenSuccess.(bool) {
+			c.Next()
+			return
+		}
 		err := auth.Parser(conf).
 			SetContextKey(contextKey).
 			SetClaims(claims()).
