@@ -62,7 +62,7 @@ func Logger(logf *logger.Logger, key string, excludes ...string) gin.HandlerFunc
 				break
 			}
 		}
-		if isEncrypt == "false" {
+		if isEncrypt == "false" || key == "" {
 			w = &responseBodyWriter{
 				body:           &bytes.Buffer{},
 				ResponseWriter: c.Writer,
