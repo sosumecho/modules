@@ -71,12 +71,8 @@ func (c *Crontab) Get(name string) (CrontabItem, bool) {
 // New 新建一个cron
 func New(logf *logger.Logger) *Crontab {
 	once.Do(func() {
-		location, err := time.LoadLocation("Asia/Shanghai")
-		if err != nil {
-			panic(err)
-		}
 		Cron = Crontab{
-			client:   cron.New(cron.WithSeconds(), cron.WithLocation(location)),
+			client:   cron.New(cron.WithSeconds()),
 			handlers: make(map[string]CrontabItem),
 			mutex:    &sync.Mutex{},
 			logger:   logf,
