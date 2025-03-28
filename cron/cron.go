@@ -5,6 +5,7 @@ import (
 	"github.com/sosumecho/modules/logger"
 	"go.uber.org/zap"
 	"sync"
+	"time"
 )
 
 var (
@@ -70,8 +71,12 @@ func (c *Crontab) Get(name string) (CrontabItem, bool) {
 // New 新建一个cron
 func New(logf *logger.Logger) *Crontab {
 	once.Do(func() {
+		location, err := time.LoadLocation("Asia/Shanghai")
+		if err != nil {
+			panic(err)
+		}
 		Cron = Crontab{
-			client:   cron.New(cron.WithSeconds()),
+			client:   cron.New(cron.WithSeconds(), cron.WithLocation(location)),
 			handlers: make(map[string]CrontabItem),
 			mutex:    &sync.Mutex{},
 			logger:   logf,
