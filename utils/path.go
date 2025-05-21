@@ -17,7 +17,7 @@ func GetAbsDir() string {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return filepath.Dir(binPath)
+	return binPath
 }
 
 // RuntimeDir 运行时目录
