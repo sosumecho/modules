@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"github.com/sosumecho/modules/utils"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"sync"
@@ -126,5 +127,8 @@ func (l *Logger) build() *Logger {
 }
 
 func New(conf *Conf) *Logger {
+	if err := utils.CreateDirIfNotExist(conf.Filename); err != nil {
+		panic(err)
+	}
 	return new(Logger).setConf(conf).build()
 }

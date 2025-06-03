@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cast"
 	"log"
 	"os"
+	path2 "path"
 	"path/filepath"
 	"strings"
 
@@ -51,11 +52,8 @@ func IsDir(fileAddr string) bool {
 func Mkdir(path []string) (err error) {
 	dirArr := make([]string, 0)
 	dirArr = append(dirArr, GetAbsDir())
-	dirArr = append(dirArr, "runtime")
-	if len(path) > 0 {
-		dirArr = append(dirArr, strings.Join(path, string(os.PathSeparator)))
-	}
-	dir := strings.Join(dirArr, string(os.PathSeparator))
+	dirArr = append(dirArr, path...)
+	dir := path2.Join(dirArr...)
 	if !IsDir(dir) {
 		err = os.MkdirAll(dir, os.ModePerm)
 		if err != nil {
@@ -79,4 +77,11 @@ func UploadDir(path ...string) string {
 		}
 	}
 	return uploadDir
+}
+
+func CreateDirIfNotExist(dir string) error {
+	if IsDir(dir) {
+		return nil
+	}
+	return Mkdir([]string{dir})
 }
