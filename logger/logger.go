@@ -1,8 +1,11 @@
 package logger
 
 import (
+	"path"
 	"sync"
 	"time"
+
+	"github.com/sosumecho/modules/utils"
 )
 
 var (
@@ -88,6 +91,9 @@ type Logger interface {
 }
 
 func New(conf *Conf) Logger {
+	if err := utils.CreateDirIfNotExist(path.Dir(conf.Filename)); err != nil {
+		panic(err)
+	}
 	var l Logger
 	switch conf.Type {
 	case "zerolog":
