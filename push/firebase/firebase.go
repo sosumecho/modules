@@ -9,6 +9,7 @@ import (
 	"github.com/sosumecho/modules/utils"
 	"google.golang.org/api/option"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -70,6 +71,34 @@ func (f *Firebase) Push(message push.Message) error {
 		}
 	}
 	return nil
+}
+
+func (f *Firebase) PushMany(message push.Message) ([]string, error) {
+	client, err := f.client.Messaging(f.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	br, err := client.SendEachForMulticast(f.ctx, &messaging.MulticastMessage{
+		Tokens: message.Token,
+		Notification: &messaging.Notification{
+			Title: message.Title,
+			Body:  message.Body,
+		},
+		Data: message.Data,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var failToken = make([]string, 0)
+	if br.FailureCount > 0 {
+		for index, resp := range br.Responses {
+			if !resp.Success && resp.Error != nil && strings.Contains(resp.Error.Error(), "Requested entity was not found") {
+				failToken = append(failToken, message.Token[index])
+			}
+		}
+	}
+	return failToken, err
 }
 
 func New() *Firebase {

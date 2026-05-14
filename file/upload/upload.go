@@ -2,6 +2,14 @@ package upload
 
 import (
 	"fmt"
+	"io"
+	"mime/multipart"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+
 	"github.com/disintegration/imaging"
 	"github.com/panjf2000/ants/v2"
 	"github.com/sosumecho/modules/drivers/pool"
@@ -10,13 +18,6 @@ import (
 	"github.com/sosumecho/modules/logger"
 	"github.com/sosumecho/modules/response"
 	"github.com/sosumecho/modules/utils"
-	"io"
-	"mime/multipart"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 )
@@ -408,7 +409,9 @@ func (u *Uploader) saveFile(
 		if err != nil {
 			return nil, err
 		}
-		_, _, _ = u.saveHandler(info, false)
+		if u.saveHandler != nil {
+			_, _, _ = u.saveHandler(info, false)
+		}
 	}
 	return info, nil
 }
