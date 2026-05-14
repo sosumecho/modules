@@ -1,22 +1,12 @@
 package logger
 
 import (
-	"fmt"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-)
-
-const (
-	LogTypeDaily = "daily"
 )
 
 var (
-	L    *Logger
+	L    Logger
 	once sync.Once
 )
 
@@ -31,100 +21,121 @@ type Conf struct {
 	IsLocal   bool   `mapstructure:"is_local"`
 }
 
-type Logger struct {
-	*zap.Logger
-	conf *Conf
+type FieldKind int
+
+const (
+	KindAny FieldKind = iota
+	KindInt64
+	KindString
+	KindBool
+	KindFloat64
+	KindDuration
+	KindTime
+)
+
+type Field struct {
+	Key   string
+	Kind  FieldKind
+	Int   int64
+	Str   string
+	Float float64
+	Any   interface{}
 }
 
-func (l *Logger) Levels() []zapcore.Level {
-	return []zapcore.Level{
-		zapcore.DebugLevel,
-		zapcore.InfoLevel,
-		zapcore.WarnLevel,
-		zapcore.ErrorLevel,
-		zapcore.DPanicLevel,
-		zapcore.PanicLevel,
-		zapcore.FatalLevel,
-	}
+func Int(key string, val int) Field {
+	return Field{Key: key, Kind: KindInt64, Int: int64(val)}
 }
 
-func (l *Logger) getLogWriter(level zapcore.Level) zapcore.WriteSyncer {
-	var filename = fmt.Sprintf("%s%s.log", l.conf.Filename, level)
-
-	lumberJackLogger := &lumberjack.Logger{
-		Filename:   filename,
-		MaxSize:    l.conf.MaxSize,
-		MaxBackups: l.conf.MaxBackup,
-		MaxAge:     l.conf.MaxAge,
-		Compress:   l.conf.Compress,
-	}
-
-	if l.conf.IsLocal {
-		return zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(lumberJackLogger))
-	}
-	return zapcore.AddSync(lumberJackLogger)
+func Int64(key string, val int64) Field {
+	return Field{Key: key, Kind: KindInt64, Int: val}
 }
 
-func (l *Logger) getEncoder() zapcore.Encoder {
-	encoderConf := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "Logger",
-		CallerKey:      "caller",
-		FunctionKey:    zapcore.OmitKey,
-		MessageKey:     "message",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     l.customTimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	}
-
-	if l.conf.IsLocal {
-		encoderConf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		return zapcore.NewConsoleEncoder(encoderConf)
-	}
-	return zapcore.NewJSONEncoder(encoderConf)
+func String(key string, val string) Field {
+	return Field{Key: key, Kind: KindString, Str: val}
 }
 
-func (l *Logger) customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02 15:04:05"))
+func Bool(key string, val bool) Field {
+	var i int64
+	if val {
+		i = 1
+	}
+	return Field{Key: key, Kind: KindBool, Int: i}
 }
 
-func (l *Logger) setConf(conf *Conf) *Logger {
-	l.conf = conf
+func Float64(key string, val float64) Field {
+	return Field{Key: key, Kind: KindFloat64, Float: val}
+}
+
+func Duration(key string, val time.Duration) Field {
+	return Field{Key: key, Kind: KindDuration, Int: int64(val)}
+}
+
+func Time(key string, val time.Time) Field {
+	return Field{Key: key, Kind: KindTime, Int: val.UnixNano(), Any: val}
+}
+
+func Any(key string, value interface{}) Field {
+	return Field{Key: key, Kind: KindAny, Any: value}
+}
+
+type Logger interface {
+	Debug(msg string, fields ...Field)
+	Info(msg string, fields ...Field)
+	Warn(msg string, fields ...Field)
+	Error(msg string, fields ...Field)
+	Panic(msg string, fields ...Field)
+	Fatal(msg string, fields ...Field)
+}
+
+func New(conf *Conf) Logger {
+	var l Logger
+	switch conf.Type {
+	case "zerolog":
+		l = newZerologLogger(conf)
+	default:
+		l = newZapLogger(conf)
+	}
+	L = l
 	return l
 }
 
-func (l *Logger) build() *Logger {
-	level := new(zapcore.Level)
-	if err := level.UnmarshalText([]byte(l.conf.Level)); err != nil {
-		panic("日志级别不正确")
-	}
-
-	cores := make([]zapcore.Core, 0, len(l.Levels()))
-	for _, item := range l.Levels() {
-		if item < *level {
-			continue
-		}
-		cores = append(cores, zapcore.NewCore(l.getEncoder(), l.getLogWriter(item), zap.LevelEnablerFunc(func(item zapcore.Level) func(level zapcore.Level) bool {
-			return func(level zapcore.Level) bool {
-				return level == item
-			}
-		}(item))))
-
-		//cores = append(cores, zapcore.NewCore(l.getEncoder(), l.getLogWriter(item), item))
-	}
-	l.Logger = zap.New(zapcore.NewTee(cores...),
-		zap.AddCaller(),
-		//zap.AddCallerSkip(1),
-		zap.AddStacktrace(zap.PanicLevel),
-	)
-	zap.ReplaceGlobals(l.Logger)
-	return l
+func SetLogger(l Logger) {
+	L = l
 }
 
-func New(conf *Conf) *Logger {
-	return new(Logger).setConf(conf).build()
+// Global functions for convenience
+func Debug(msg string, fields ...Field) {
+	if L != nil {
+		L.Debug(msg, fields...)
+	}
+}
+
+func Info(msg string, fields ...Field) {
+	if L != nil {
+		L.Info(msg, fields...)
+	}
+}
+
+func Warn(msg string, fields ...Field) {
+	if L != nil {
+		L.Warn(msg, fields...)
+	}
+}
+
+func Error(msg string, fields ...Field) {
+	if L != nil {
+		L.Error(msg, fields...)
+	}
+}
+
+func Panic(msg string, fields ...Field) {
+	if L != nil {
+		L.Panic(msg, fields...)
+	}
+}
+
+func Fatal(msg string, fields ...Field) {
+	if L != nil {
+		L.Fatal(msg, fields...)
+	}
 }

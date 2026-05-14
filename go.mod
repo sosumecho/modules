@@ -5,6 +5,7 @@ go 1.23
 require (
 	entgo.io/ent v0.13.1
 	firebase.google.com/go/v4 v4.15.1
+	github.com/Microsoft/go-winio v0.6.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.371
 	github.com/awa/go-iap v1.21.1
 	github.com/disintegration/imaging v1.6.2
@@ -23,6 +24,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/redis/go-redis/v9 v9.0.4
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/rs/zerolog v1.35.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/sideshow/apns2 v0.23.0
@@ -73,6 +75,7 @@ require (
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
@@ -95,7 +98,7 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/appengine/v2 v2.0.2 // indirect
