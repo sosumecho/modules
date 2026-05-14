@@ -1,6 +1,9 @@
 package ipc
 
-import "net"
+import (
+	"net"
+	"sync"
+)
 
 type Server struct {
 	listener net.Listener
