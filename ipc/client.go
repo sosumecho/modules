@@ -145,6 +145,9 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) keepAlive() {
+	if c.opt.pingInterval <= 0 {
+		return
+	}
 	ticker := time.NewTicker(c.opt.pingInterval)
 	defer ticker.Stop()
 	for {
