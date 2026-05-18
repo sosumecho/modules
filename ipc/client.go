@@ -17,7 +17,12 @@ type Client struct {
 
 	closeChan chan struct{}
 	once      sync.Once
+
+	eventHandlers map[string]EventHandlerFunc
+	eventMu       sync.RWMutex
 }
+
+type EventHandlerFunc func(data json.RawMessage)
 
 type ClientOptions struct {
 	timeout      time.Duration
@@ -62,6 +67,16 @@ func (c *Client) readLoop() {
 		c.mu.Unlock()
 		if ok {
 			ch <- msg
+		} else if msg.Type == MsgTypeEvent {
+			var evt RPCEvent
+			if err := json.Unmarshal(msg.Payload, &evt); err == nil {
+				c.eventMu.RLock()
+				handler, ok := c.eventHandlers[evt.Event]
+				c.eventMu.RUnlock()
+				if ok {
+					go handler(evt.Data)
+				}
+			}
 		}
 
 	}
@@ -136,6 +151,12 @@ func (c *Client) Publish(payload []byte) error {
 	})
 }
 
+func (c *Client) HandleEvent(event string, handler EventHandlerFunc) {
+	c.eventMu.Lock()
+	defer c.eventMu.Unlock()
+	c.eventHandlers[event] = handler
+}
+
 func (c *Client) Close() error {
 	c.once.Do(func() {
 		c.closeChan <- struct{}{}
@@ -173,6 +194,7 @@ func NewClient(addr string, options ...Option) (*Client, error) {
 			timeout:      5 * time.Second,
 			pingInterval: time.Second * 30,
 		},
+		eventHandlers: make(map[string]EventHandlerFunc),
 		closeChan: make(chan struct{}),
 	}
 

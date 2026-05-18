@@ -80,6 +80,11 @@ func (c *Conn) Close() {
 	})
 }
 
+// Done returns a channel that's closed when the connection is closed.
+func (c *Conn) Done() <-chan struct{} {
+	return c.closed
+}
+
 func (s *Server) Serve() error {
 	for {
 		conn, err := s.listener.Accept()
@@ -144,7 +149,7 @@ func (s *Server) handleMsg(conn *Conn, msg Message) {
 			SendError(conn, msg, fmt.Errorf("method not found"))
 			return
 		}
-		rpcResponse, handlerErr := handler(req.Params)
+		rpcResponse, handlerErr := handler(conn, req.Params)
 
 		rs := RPCResponse{}
 		if handlerErr != nil {

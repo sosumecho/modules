@@ -12,4 +12,9 @@ type RPCResponse struct {
 	Result json.RawMessage `json:"result"`
 }
 
-type RPCHandlerFunc func(params json.RawMessage) (any, error)
+type RPCHandlerFunc func(conn *Conn, params json.RawMessage) (any, error)
+
+type RPCEvent struct {
+	Event string          `json:"event"`
+	Data  json.RawMessage `json:"data"`
+}
